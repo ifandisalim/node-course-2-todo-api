@@ -1,12 +1,24 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
+const _ = require('lodash');
 
 const {mongoose} = require('./db/mongoose');
 const {Todo} = require('./models/Todo');
 const {User} = require('./models/User');
 
 const app = express();
+
+const port = process.env.PORT || 3000;
+//
+// if(process.env.NODE_ENV === 'development'){
+//     // Run stuff thats for development
+// }
+// else if (process.env.NODE_ENV === 'production'){
+//     // Run stuff for production
+// }
+
+
 
 // Will parase all incoming application/json request body
 app.use(bodyParser.json());
@@ -44,31 +56,94 @@ app.get('/todos', (req,res) => {
 
 app.get('/todos/:id', (req, res) => {
 
+    // get the id value passed in url
     var id = req.params.id;
 
     if(!ObjectID.isValid(id)){
-        res.status(404).send({status: "failed", error: "Id is not valid"});
+        res.status(404).send({success: "false", error: "Id is not valid"});
         return;
     }
 
     Todo.findById(id).then((document) => {
         if(!document){
-            res.status(404).send({status: "failed", error: "Todo with that ID is not found"});
+            res.status(404).send({success: "false", error: "Todo with that ID is not found"});
             return;
         }
 
-        res.send({status: "success", todo: document});
+        res.send({success: "true", todo: document});
     })
     .catch((error) => {
-        res.status(400).send({status: "error", error: "Error retrieving data"});
+        res.status(400).send({success: "false", error: "Error retrieving data"});
     });
 
 
 });
 
 
-app.listen(3000, () => {
-    console.log('Started on port 3000');
+app.delete('/todos/:id', (req, res) => {
+    var id = req.params.id; // Get id from url params
+
+    // If id not valid return success false with status 400
+    if(!ObjectID.isValid(id)){
+        res.status(400).send({success: false, error: "ID is not valid."});
+        return;
+    }
+
+    Todo.findByIdAndRemove(id).then((document) => {
+        // If cant find return 404
+        if(!document){
+            res.status(404).send({success: false, error: "ID not found"});
+            return;
+        }
+
+        res.send({success:true, removed:document});
+    })
+    .catch((error) => {
+        res.status(400).send({success:false, error:error});
+    });
+
+
+});
+
+app.patch('/todos/:id', (req, res) => {
+    var id = req.params.id;
+    var body = _.pick(req.body, ['text', 'completed']);
+
+    if(!ObjectID.isValid(id)){
+        res.status(404).send({success: false, error: "Id is not valid."});
+        return;
+    }
+
+    // Check if body.completed prop is boolean and check if its true
+    if(_.isBoolean(body.completed) && body.completed){
+
+        // If true then add another prop to body with current timestamp
+        body.completedAt = new Date().getTime();
+    }
+    else {
+        body.completed = false;
+        body.completedAt = null;
+    }
+
+    // Update the document with new object called body and using $set
+    // new: true tells the method to return us the new document after update
+    Todo.findByIdAndUpdate(id, {$set: body}, {new: true})
+        .then((document) => {
+            if(!document){
+                res.status(404).send({success: false, error: "ID not found"});
+            }
+
+            res.send({success:true, updated:document});
+
+        })
+        .catch((error) => {
+            res.status(400).send({success:false, error:error});
+        });
+});
+
+
+app.listen(port, () => {
+    console.log('Started on port' , port);
 });
 
 module.exports = {
