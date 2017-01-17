@@ -1,3 +1,5 @@
+require('./config/config'); // most top of file
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
@@ -10,13 +12,6 @@ const {User} = require('./models/User');
 const app = express();
 
 const port = process.env.PORT || 3000;
-//
-// if(process.env.NODE_ENV === 'development'){
-//     // Run stuff thats for development
-// }
-// else if (process.env.NODE_ENV === 'production'){
-//     // Run stuff for production
-// }
 
 
 
@@ -141,6 +136,22 @@ app.patch('/todos/:id', (req, res) => {
         });
 });
 
+
+
+app.post('/users', (req, res) => {
+    var body = _.pick(req.body, ['email', 'password']);
+    var user = new User(body);
+
+    user.save().then(() => {
+        return user.generateAuthToken();
+    })
+    .then((token) => {
+        res.header('x-auth', token).send(user);
+    })
+    .catch((error) => {
+        res.status(400).send(error);
+    });
+});
 
 app.listen(port, () => {
     console.log('Started on port' , port);
