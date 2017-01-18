@@ -10,6 +10,8 @@ var token = jwt.sign(data, 'supersecret');
 console.log(token);
 
 
+// Token should be received back from client
+// Use the secret we used to sign and this will return the data passed when sign
 var decodedToken = jwt.verify(token, 'supersecret');
 console.log(decodedToken);
 
