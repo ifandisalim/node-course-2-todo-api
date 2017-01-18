@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
+const bcrypt = require('bcryptjs');
 
 var UserSchema = new mongoose.Schema( {
     email:{
@@ -81,6 +82,29 @@ UserSchema.statics.findByToken = function(token){
     });
 
 };
+
+
+UserSchema.pre('save', function(next){
+    var user = this;
+
+    // Check if the password field is updated, when registering it will be
+    // If user sends request to only update other stuff then password wont be rehashed
+    if(user.isModified('password')){
+
+        // generate salt
+        bcrypt.genSalt(10, (err, salt) => {
+            // Hash the password from this.password (this refers to instance of Schema)
+            bcrypt.hash(user.password, salt, (err, hash) => {
+                // Overwrite the regular text password with the hashed one
+                user.password = hash;
+                next();
+            });
+        });
+    } else{
+        next();
+    }
+
+});
 
 var User = mongoose.model('User', UserSchema);
 

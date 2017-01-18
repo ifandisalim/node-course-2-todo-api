@@ -1,21 +1,40 @@
 const {SHA256} = require('crypto-js');
 
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
-var data = {
-    id: 10
-};
+var password = '123abc!';
 
-var token = jwt.sign(data, 'supersecret');
-console.log(token);
+bcrypt.genSalt(10, (err, salt) => {
+    // In callback function, salt passed in is the generated salt
+    bcrypt.hash(password, salt, (err, hash) => {
+
+        // hash passed into callback of hash() is the hashed value
+        // Compare used to compare if text password is equal to hashed password
+        bcrypt.compare(password, hash, (err, res) => {
+            // res will be true
+            console.log("Password and hash matched? ", res);
+        });
+
+    });
+});
 
 
-// Token should be received back from client
-// Use the secret we used to sign and this will return the data passed when sign
-var decodedToken = jwt.verify(token, 'supersecret');
-console.log(decodedToken);
 
-// var message = 'I am user number 3';
+// var data = {
+//     id: 10
+// };
+//
+// var token = jwt.sign(data, 'supersecret');
+// console.log(token);
+//
+//
+// // Token should be received back from client
+// // Use the secret we used to sign and this will return the data passed when sign
+// var decodedToken = jwt.verify(token, 'supersecret');
+// console.log(decodedToken);
+//
+// // var message = 'I am user number 3';
 //
 // // hash will be a long string
 // var hash = SHA256(message).toString();
